@@ -58,7 +58,7 @@ fn break_xor_1char(b: Bytes) -> Vec<(f64, char, Bytes)> {
             win_char = *c;
         }
 
-        if score > 0.0 {
+        if score > 0.9 {
             ans.push((score, *c, x));
         }
     }
