@@ -1,7 +1,7 @@
 #![allow(unused)]
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
-pub fn hex_to_bytes(hex: Bytes) -> Bytes {
+pub fn hex_to_bytes(hex: &Bytes) -> Bytes {
     let bytes = hex::decode(hex).unwrap();
     Bytes::from(bytes)
 }
@@ -15,7 +15,7 @@ pub fn bytes_to_base64(b: Bytes) -> String {
 }
 
 pub fn hex_to_base64(hex: Bytes) -> String {
-    bytes_to_base64(hex_to_bytes(hex))
+    bytes_to_base64(hex_to_bytes(&hex))
 }
 
 pub fn xor_bytes(a: &Bytes, b: &Bytes) -> Bytes {
@@ -40,13 +40,26 @@ mod test {
     use super::*;
 
     #[test]
-    fn xor_test() {
+    fn xor_bytes_test() {
         let x_hex = Bytes::from("1c0111001f010100061a024b53535009181c");
         let y_hex = Bytes::from("686974207468652062756c6c277320657965");
 
-        let x = xor_bytes(&hex_to_bytes(x_hex), &hex_to_bytes(y_hex));
+        let x = xor_bytes(&hex_to_bytes(&x_hex), &hex_to_bytes(&y_hex));
         let s = bytes_to_hex(x);
         assert_eq!(s, "746865206b696420646f6e277420706c6179");
+    }
+
+    #[test]
+    fn xor_char_test() {
+        let x_hex = Bytes::from("1c011100");
+        let mut x = xor_char(&hex_to_bytes(&x_hex), &'e');
+        assert_eq!(x, "ydte");
+
+        x = xor_char(&hex_to_bytes(&x_hex), &'X');
+        assert_eq!(x, "DYIX");
+
+        x = xor_char(&hex_to_bytes(&x_hex), &'x');
+        assert_eq!(x, "dyix");
     }
 
     #[test]
@@ -68,20 +81,20 @@ mod test {
     fn hex_to_bytes_test() {
         // decimal value
         let mut x = Bytes::from("00");
-        let mut b = hex_to_bytes(x);
+        let mut b = hex_to_bytes(&x);
         assert_eq!(b.as_ref(), [0]);
 
         x = Bytes::from("ff");
-        b = hex_to_bytes(x);
+        b = hex_to_bytes(&x);
         assert_eq!(b.as_ref(), [255]);
 
         // char value
         x = Bytes::from("30");
-        b = hex_to_bytes(x);
+        b = hex_to_bytes(&x);
         assert_eq!(b, "0");
 
         x = Bytes::from("49276d206b696c6c696e6720796f757220627261696e206c696b65206120706f69736f6e6f7573206d757368726f6f6d");
-        b = hex_to_bytes(x);
+        b = hex_to_bytes(&x);
         assert_eq!(b, "I'm killing your brain like a poisonous mushroom");
     }
 
@@ -89,7 +102,7 @@ mod test {
     fn hex_to_bytes_and_back() {
         let b1 = Bytes::from("the kid don't play");
         let x = bytes_to_hex(b1.clone());
-        let b2 = hex_to_bytes(x);
+        let b2 = hex_to_bytes(&x);
         assert_eq!(b1, b2);
     }
 

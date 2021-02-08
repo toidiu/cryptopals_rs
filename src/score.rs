@@ -81,7 +81,7 @@ mod test {
     fn break_xor_1char_test() {
         let hex =
             Bytes::from("1b37373331363f78151b7f2b783431333d78397828372d363c78373e783a393b3736");
-        let b = hex_to_bytes(hex);
+        let b = hex_to_bytes(&hex);
         let mut ans = break_xor_1char(b);
         for a in &ans {
             println!("{:?}---", a);
