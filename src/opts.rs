@@ -1,29 +1,36 @@
 #![allow(unused)]
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
-fn main() {}
-
-fn hex_to_bytes(hex: Bytes) -> Bytes {
+pub fn hex_to_bytes(hex: Bytes) -> Bytes {
     let bytes = hex::decode(hex).unwrap();
     Bytes::from(bytes)
 }
 
-fn bytes_to_hex(b: Bytes) -> Bytes {
+pub fn bytes_to_hex(b: Bytes) -> Bytes {
     Bytes::from(hex::encode(b))
 }
 
-fn bytes_to_base64(b: Bytes) -> String {
+pub fn bytes_to_base64(b: Bytes) -> String {
     base64::encode_config(b, base64::STANDARD)
 }
 
-fn hex_to_base64(hex: Bytes) -> String {
+pub fn hex_to_base64(hex: Bytes) -> String {
     bytes_to_base64(hex_to_bytes(hex))
 }
 
-fn xor_bytes(a: Bytes, b: Bytes) -> Bytes {
+pub fn xor_bytes(a: &Bytes, b: &Bytes) -> Bytes {
     let mut out = BytesMut::with_capacity(a.len());
     for (i, item) in a.iter().enumerate() {
         out.put_u8(item ^ b[i]);
+    }
+    out.freeze()
+}
+
+pub fn xor_char(a: &Bytes, c: &char) -> Bytes {
+    let mut out = BytesMut::with_capacity(a.len());
+    for item in a.iter() {
+        let u = *c as u8;
+        out.put_u8(item ^ u);
     }
     out.freeze()
 }
@@ -37,7 +44,7 @@ mod test {
         let x_hex = Bytes::from("1c0111001f010100061a024b53535009181c");
         let y_hex = Bytes::from("686974207468652062756c6c277320657965");
 
-        let x = xor_bytes(hex_to_bytes(x_hex), hex_to_bytes(y_hex));
+        let x = xor_bytes(&hex_to_bytes(x_hex), &hex_to_bytes(y_hex));
         let s = bytes_to_hex(x);
         assert_eq!(s, "746865206b696420646f6e277420706c6179");
     }
