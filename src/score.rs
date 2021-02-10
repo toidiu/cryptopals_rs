@@ -5,39 +5,55 @@ use bytes::{Buf, BufMut, Bytes, BytesMut};
 // scoring currently based on if is alphanumeric and not whitespace
 fn score_plaintext(b: &Bytes) -> f64 {
     let mut len: f64 = 0.0;
-    // let mut num_e = 0_f64;
-    // let mut num_t = 0_f64;
-    // let mut num_a = 0_f64;
-    // let mut num_o = 0_f64;
-    // let mut num_i = 0_f64;
-
     let mut num_alpha = 0_f64;
 
     for byte in b.iter() {
         let c = *byte as char;
-
         if c.is_alphanumeric() {
             num_alpha = num_alpha + 1.0;
         }
         if c != ' ' {
             len = len + 1.0;
         }
-
-        //     match c {
-        //         'e' | 'E' => num_e = num_e + 1.0,
-        //         't' | 'T' => num_t = num_t + 1.0,
-        //         'a' | 'A' => num_a = num_a + 1.0,
-        //         'o' | 'O' => num_o = num_o + 1.0,
-        //         'i' | 'I' => num_i = num_i + 1.0,
-        //         _ => (),
-        //     }
-        // }
     }
 
-    // let score: f64 = (num_e + num_t + num_a + num_o + num_i) / len;
     let score: f64 = num_alpha / len;
     score
 }
+
+// we can use freq to ensure that top letters occur a certain percent of times
+fn score_plaintext_freq(b: &Bytes) -> f64 {
+    let mut len: f64 = 0.0;
+    let mut top_freq = 0_f64;
+
+    for byte in b.iter() {
+        let c = *byte as char;
+        if c != ' ' {
+            len = len + 1.0;
+        }
+        match c {
+            'e' | 'E' | // e 12.02
+            't' | 'T' | // t 9.10
+            'a' | 'A' | // a 8.12
+            'o' | 'O' | // o 7.68
+            'i' | 'I' | // i 7.31
+            'n' | 'N' | // n 6.95
+            's' | 'S' | // s 6.28
+            'r' | 'R' | // r 6.02
+            'h' | 'H' | // h 5.92
+            'd' | 'D'   // d 4.32
+            => top_freq = top_freq + 1.0,
+            _ => (),
+        }
+    }
+
+    let score: f64 = top_freq / len;
+    score
+}
+
+// we can split by space and ensure that each word had a vowel
+// we can look at double letters and the percent that it is likely to happen
+// fn score_plaintext_freq(b: &Bytes) -> f64 {
 
 fn break_xor_1char(b: Bytes) -> Vec<(f64, char, Bytes)> {
     let mut ans = Vec::new();
@@ -53,11 +69,13 @@ fn break_xor_1char(b: Bytes) -> Vec<(f64, char, Bytes)> {
         // xor with s
         let x = xor_char(&b, c);
         let score = score_plaintext(&x);
+        let score_a = score_plaintext_freq(&x);
         if (score > highest_score) {
             highest_score = score;
             win_char = *c;
         }
 
+        // println!("{}, {}, {}, {:?}", c, score, score_a, x);
         if score > 0.9 {
             ans.push((score, *c, x));
         }
@@ -75,6 +93,29 @@ mod test {
         let t = Bytes::from("I hope you and your wife have a nice trip");
         let score = score_plaintext(&t);
         assert!(score > 0.9);
+    }
+
+    #[test]
+    fn score_plaintext_fail_test() {
+        let t = Bytes::from("b!o31<, a!kj  @%4&^as# akj# iom");
+        let score = score_plaintext(&t);
+        assert!(score < 0.9);
+    }
+
+    #[test]
+    fn score_plaintext_freq_test() {
+        let t = Bytes::from("I hope you and your wife have a nice trip");
+        // let t = Bytes::from("b!o31<, a!kj  @%4&^as# akj# iom");
+        let score = score_plaintext_freq(&t);
+        assert!(score > 0.5);
+    }
+
+    #[test]
+    fn score_plaintext_freq_fail_test() {
+        let t = Bytes::from("]qquwpy>S]9m>rwu{>\x7f>nqkpz>qx>|\x7f}qp");
+        let score = score_plaintext_freq(&t);
+        println!("{}", score);
+        assert!(score < 0.5);
     }
 
     #[test]
