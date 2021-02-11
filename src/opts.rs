@@ -26,6 +26,8 @@ pub fn xor_bytes(a: &Bytes, b: &Bytes) -> Bytes {
     out.freeze()
 }
 
+// TODO this can be replaced with `xor_with_key`..
+// a good exercise will be to do bench testing and fuzzing between the two
 pub fn xor_char(a: &Bytes, c: &char) -> Bytes {
     let mut out = BytesMut::with_capacity(a.len());
     for item in a.iter() {
@@ -33,6 +35,23 @@ pub fn xor_char(a: &Bytes, c: &char) -> Bytes {
         out.put_u8(item ^ u);
     }
     out.freeze()
+}
+
+pub fn xor_with_key(a: &Bytes, key: &Bytes) -> Bytes {
+    let mut key_bytes = BytesMut::with_capacity(a.len());
+    // generate buffer bytes by repeating the bytes `key`
+    let mut key_len = key.len();
+
+    // generate key_bytes
+    while key_bytes.len() < a.len() {
+        key_bytes.extend_from_slice(key.as_ref());
+    }
+
+    // resize key_bytes to length of a and convert to Bytes
+    key_bytes.resize(a.len(), 0_u8);
+    let key_bytes_frozen = key_bytes.freeze();
+
+    xor_bytes(a, &key_bytes_frozen)
 }
 
 #[cfg(test)]
@@ -60,6 +79,25 @@ mod test {
 
         x = xor_char(&hex_to_bytes(&x_hex), &'x');
         assert_eq!(x, "dyix");
+    }
+
+    #[test]
+    fn xor_with_key_test() {
+        let x_hex = Bytes::from("1c01110033");
+        let mut x = xor_with_key(&hex_to_bytes(&x_hex), &Bytes::from("e"));
+        assert_eq!(x, "ydteV");
+
+        x = xor_with_key(&hex_to_bytes(&x_hex), &Bytes::from("X"));
+        assert_eq!(x, "DYIXk");
+
+        x = xor_with_key(&hex_to_bytes(&x_hex), &Bytes::from("x"));
+        assert_eq!(x, "dyixK");
+
+        x = xor_with_key(&hex_to_bytes(&x_hex), &Bytes::from("xX"));
+        assert_eq!(x, "dYiXK");
+
+        x = xor_with_key(&hex_to_bytes(&x_hex), &Bytes::from("xXc"));
+        assert_eq!(x, "dYrxk");
     }
 
     #[test]
