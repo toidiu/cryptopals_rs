@@ -3,7 +3,7 @@ use crate::opts::{hex_to_bytes, xor_char};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 // scoring currently based on if is alphanumeric and not whitespace
-fn score_plaintext(b: &Bytes) -> f64 {
+fn score_plaintext_alpha(b: &Bytes) -> f64 {
     let mut len: f64 = 0.0;
     let mut num_alpha = 0_f64;
 
@@ -68,7 +68,7 @@ fn break_xor_1char(b: Bytes) -> Vec<(f64, char, Bytes)> {
     for c in alphabet.iter() {
         // xor with s
         let x = xor_char(&b, c);
-        let score = score_plaintext(&x);
+        let score = score_plaintext_alpha(&x);
         let score_a = score_plaintext_freq(&x);
         if (score > highest_score) {
             highest_score = score;
@@ -91,14 +91,14 @@ mod test {
     #[test]
     fn score_plaintext_test() {
         let t = Bytes::from("I hope you and your wife have a nice trip");
-        let score = score_plaintext(&t);
+        let score = score_plaintext_alpha(&t);
         assert!(score > 0.9);
     }
 
     #[test]
     fn score_plaintext_fail_test() {
         let t = Bytes::from("b!o31<, a!kj  @%4&^as# akj# iom");
-        let score = score_plaintext(&t);
+        let score = score_plaintext_alpha(&t);
         assert!(score < 0.9);
     }
 
