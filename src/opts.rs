@@ -77,30 +77,31 @@ pub fn u8_to_binary(num: &u8, bin: &mut [char; 8]) {
 }
 
 pub fn hamming_distance(a: &Bytes, b: &Bytes) -> u32 {
-    let mut dis = 0;
+    assert_eq!(a.len(), b.len(), "bytes must have the same length");
+    let mut distance = 0;
 
     println!("{:?}", a.as_ref());
     println!("{:?}", b.as_ref());
     let mut bin_a = ['0'; 8];
     let mut bin_b = ['0'; 8];
 
-    for (i, item) in a.iter().enumerate() {
+    // for each byte get binary for a and b
+    for (idx, item) in a.iter().enumerate() {
         u8_to_binary(&item, &mut bin_a);
-        u8_to_binary(&b[i], &mut bin_b);
+        u8_to_binary(&b[idx], &mut bin_b);
 
-        let chars_a = bin_a.iter();
-        let mut chars_b = bin_b.iter();
-
-        println!("byte {}, {:?} {:?}", i, &bin_a, &bin_b);
-        for (one, two) in chars_a.zip(chars_b) {
-            let diff = one != two;
-            println!("{:?} {:?} {:?}", &one, &two, diff);
-            if diff {
-                dis = dis + 1;
+        println!("byte {}, {:?} {:?}", idx, &bin_a, &bin_b);
+        // TODO: extract this into its own function
+        // for each binary compare the binary char
+        for (one, two) in bin_a.iter().zip(bin_b.iter()) {
+            let different_bit = one != two; // char will be either 1 or 0
+            println!("{:?} {:?} {:?}", &one, &two, different_bit);
+            if different_bit {
+                distance = distance + 1;
             }
         }
     }
-    dis
+    distance
 }
 
 #[cfg(test)]
