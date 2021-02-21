@@ -26,6 +26,8 @@ pub fn xor_bytes(a: &Bytes, b: &Bytes) -> Bytes {
     out.freeze()
 }
 
+// [deprecated] use `xor_with_key`..
+// a good exercise will be to do bench testing and fuzzing between the two
 pub fn xor_char(a: &Bytes, c: &char) -> Bytes {
     let mut out = BytesMut::with_capacity(a.len());
     for item in a.iter() {
@@ -35,9 +37,128 @@ pub fn xor_char(a: &Bytes, c: &char) -> Bytes {
     out.freeze()
 }
 
+pub fn xor_with_key(a: &Bytes, key: &Bytes) -> Bytes {
+    let mut key_bytes = BytesMut::with_capacity(a.len());
+    // generate buffer bytes by repeating the bytes `key`
+    let mut key_len = key.len();
+
+    // generate key_bytes
+    while key_bytes.len() < a.len() {
+        key_bytes.extend_from_slice(key.as_ref());
+    }
+
+    // resize key_bytes to length of a and convert to Bytes
+    key_bytes.resize(a.len(), 0_u8);
+    let key_bytes_frozen = key_bytes.freeze();
+
+    xor_bytes(a, &key_bytes_frozen)
+}
+
+pub fn u8_to_binary(num: &u8, bin: &mut [char; 8]) {
+    let mut n: u8 = *num;
+    let mut i = 0;
+    while (n != 0_u8) {
+        if (n % 2 == 1) {
+            bin[i] = '1';
+        } else {
+            bin[i] = '0';
+        }
+        n = n / 2;
+        i = i + 1;
+    }
+
+    // fill in remaining with 0
+    while (i < 8) {
+        bin[i] = '0';
+        i = i + 1;
+    }
+
+    bin.reverse()
+}
+
+pub fn hamming_distance(a: &Bytes, b: &Bytes) -> u32 {
+    assert_eq!(a.len(), b.len(), "bytes must have the same length");
+    let mut distance = 0;
+
+    println!("{:?}", a.as_ref());
+    println!("{:?}", b.as_ref());
+    let mut bin_a = ['0'; 8];
+    let mut bin_b = ['0'; 8];
+
+    // for each byte get binary for a and b
+    for (idx, item) in a.iter().enumerate() {
+        u8_to_binary(&item, &mut bin_a);
+        u8_to_binary(&b[idx], &mut bin_b);
+
+        println!("byte {}, {:?} {:?}", idx, &bin_a, &bin_b);
+        // TODO: extract this into its own function
+        // for each binary compare the binary char
+        for (one, two) in bin_a.iter().zip(bin_b.iter()) {
+            let different_bit = one != two; // char will be either 1 or 0
+            println!("{:?} {:?} {:?}", &one, &two, different_bit);
+            if different_bit {
+                distance = distance + 1;
+            }
+        }
+    }
+    distance
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
+
+    #[test]
+    fn hamming_distance_test() {
+        let a = Bytes::from("this is a test");
+        let b = Bytes::from("wokka wokka!!!");
+
+        let x = hamming_distance(&a, &b);
+        assert_eq!(x, 37);
+    }
+
+    #[test]
+    fn u8_to_binary_test() {
+        let mut bin = ['0'; 8];
+        u8_to_binary(&255, &mut bin);
+        assert_eq!(bin, ['1', '1', '1', '1', '1', '1', '1', '1']);
+
+        u8_to_binary(&0, &mut bin);
+        assert_eq!(bin, ['0', '0', '0', '0', '0', '0', '0', '0']);
+
+        u8_to_binary(&255, &mut bin);
+        assert_eq!(bin, ['1', '1', '1', '1', '1', '1', '1', '1']);
+
+        u8_to_binary(&1, &mut bin);
+        assert_eq!(bin, ['0', '0', '0', '0', '0', '0', '0', '1']);
+
+        u8_to_binary(&2, &mut bin);
+        assert_eq!(bin, ['0', '0', '0', '0', '0', '0', '1', '0']);
+
+        u8_to_binary(&42, &mut bin);
+        assert_eq!(bin, ['0', '0', '1', '0', '1', '0', '1', '0']);
+
+        u8_to_binary(&170, &mut bin);
+        assert_eq!(bin, ['1', '0', '1', '0', '1', '0', '1', '0']);
+
+        u8_to_binary(&85, &mut bin);
+        assert_eq!(bin, ['0', '1', '0', '1', '0', '1', '0', '1']);
+    }
+
+    #[test]
+    fn xor_with_key_ice_test() {
+        let a = Bytes::from(
+            "Burning 'em, if you ain't quick and nimble\nI go crazy when I hear a cymbal",
+        );
+        let key = Bytes::from("ICE");
+
+        let x = xor_with_key(&a, &key);
+        let x_byte = bytes_to_hex(x);
+        assert_eq!(
+            x_byte,
+            "0b3637272a2b2e63622c2e69692a23693a2a3c6324202d623d63343c2a26226324272765272a282b2f20430a652e2c652a3124333a653e2b2027630c692b20283165286326302e27282f"
+        );
+    }
 
     #[test]
     fn xor_bytes_test() {
@@ -60,6 +181,25 @@ mod test {
 
         x = xor_char(&hex_to_bytes(&x_hex), &'x');
         assert_eq!(x, "dyix");
+    }
+
+    #[test]
+    fn xor_with_key_test() {
+        let x_hex = Bytes::from("1c01110033");
+        let mut x = xor_with_key(&hex_to_bytes(&x_hex), &Bytes::from("e"));
+        assert_eq!(x, "ydteV");
+
+        x = xor_with_key(&hex_to_bytes(&x_hex), &Bytes::from("X"));
+        assert_eq!(x, "DYIXk");
+
+        x = xor_with_key(&hex_to_bytes(&x_hex), &Bytes::from("x"));
+        assert_eq!(x, "dyixK");
+
+        x = xor_with_key(&hex_to_bytes(&x_hex), &Bytes::from("xX"));
+        assert_eq!(x, "dYiXK");
+
+        x = xor_with_key(&hex_to_bytes(&x_hex), &Bytes::from("xXc"));
+        assert_eq!(x, "dYrxk");
     }
 
     #[test]
