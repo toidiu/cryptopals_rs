@@ -1,6 +1,6 @@
 #![allow(unused)]
-use bytes::{Buf, BufMut, Bytes, BytesMut};
 use super::hex::hex_to_bytes;
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 pub fn bytes_to_base64(b: Bytes) -> String {
     base64::encode_config(b, base64::STANDARD)

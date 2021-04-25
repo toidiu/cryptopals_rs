@@ -7,14 +7,14 @@ pub fn u8_to_binary(num: &u8, bin: &mut [char; 8]) {
         } else {
             bin[i] = '0';
         }
-        n = n / 2;
-        i = i + 1;
+        n /= 2;
+        i += 1;
     }
 
     // fill in remaining with 0
     while i < 8 {
         bin[i] = '0';
-        i = i + 1;
+        i += 1;
     }
 
     bin.reverse()

@@ -1,6 +1,6 @@
 #![allow(unused)]
-use bytes::{Buf, BufMut, Bytes, BytesMut};
 use super::binary;
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 pub fn hamming_distance(a: &Bytes, b: &Bytes) -> u32 {
     debug_assert_eq!(a.len(), b.len(), "bytes must have the same length");
@@ -23,7 +23,7 @@ pub fn hamming_distance(a: &Bytes, b: &Bytes) -> u32 {
             let different_bit = one != two; // char will be either 1 or 0
             println!("{:?} {:?} {:?}", &one, &two, different_bit);
             if different_bit {
-                distance = distance + 1;
+                distance += 1;
             }
         }
     }
