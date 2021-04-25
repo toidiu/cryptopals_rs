@@ -1,5 +1,5 @@
 #![allow(unused)]
-use crate::opts::{hex_to_bytes, xor_char};
+use crate::opts::{hex::hex_to_bytes, xor::xor_char};
 use bytes::{Buf, BufMut, Bytes, BytesMut};
 
 // scoring currently based on if is alphanumeric and not whitespace
