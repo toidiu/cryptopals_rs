@@ -1,6 +1,11 @@
 ## cryptopals_rs
 https://cryptopals.com/
 
+
+## current progress:
+1.6
+https://cryptopals.com/sets/1/challenges/6
+
 ### resources:
 - http://www.asciitable.com/
 - https://www.ascii-code.com/
